@@ -1,8 +1,12 @@
 import requests
 from bs4 import BeautifulSoup
+import datetime
 
 def fetch_soup(station_id):
-    url = f"https://bilkom.pl/stacje/tablica?stacja={station_id}&przyjazd=false&_csrf="
+    dt_obj = datetime.datetime.now()
+    dt_date = dt_obj.strftime("%d%m%Y%H%M")
+    dt_time = f"{dt_obj.strftime('%H')}%3A{dt_obj.strftime('%M')}"
+    url = f"https://bilkom.pl/stacje/tablica?stacja={station_id}&data={dt_date}&time={dt_time}&przyjazd=false&_csrf"
     response = requests.get(url)
 
     # Check that it worked
@@ -25,13 +29,15 @@ def parse_soup(soup):
         processed['time'] = el.select_one(".time").text.strip()
         processed['delay'] = el.select_one(".time").get("data-difference")
         processed['direction'] = el.select_one(".direction").text.strip()
-        processed['platform'] = el.select_one(".track").text.split("/")
+        try:
+            processed['platform'] = el.select_one(".track").text.split("/")
+        except:
+            processed['platform'] = None
         entries.append(processed)
 
-    return entries[:3]
+    return entries
 
-print(parse_soup(fetch_soup("5100579")))
+for i in parse_soup(fetch_soup("5100579")):
+    print(i)
 
-# ! add delay processing
 # todo: take into account passing trains (predicting at next station)
-# * fix the bug where on certain stations the platforms are incorectly parsed
